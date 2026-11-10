@@ -44,11 +44,12 @@ public class MainActivity extends Activity
     private static final int GREY = Color.parseColor("#616161");
 
     private EditText numberField, pinField;
-    private TextView statusView, replyView;
+    private TextView statusView, replyView, stateView;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private long waitingSince = 0;   // 0 = not waiting for a reply
     private String pendingLabel = "";
+    private String pendingMode = "";
 
     private final Runnable timeout = () -> {
         if (waitingSince != 0) {
@@ -82,6 +83,7 @@ public class MainActivity extends Activity
         numberField.setText(p.getString(Prefs.KEY_NUMBER, ""));
         pinField.setText(p.getString(Prefs.KEY_PIN, ""));
         showLastReply();
+        showState();
 
         IntentFilter f = new IntentFilter(ACTION_SENT);
         if (Build.VERSION.SDK_INT >= 33) {
@@ -125,6 +127,16 @@ public class MainActivity extends Activity
         title.setTextSize(26);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         root.addView(title);
+
+        stateView = new TextView(this);
+        stateView.setTextSize(17);
+        stateView.setTypeface(Typeface.DEFAULT_BOLD);
+        stateView.setPadding(dp(14), dp(12), dp(14), dp(12));
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        slp.topMargin = dp(12);
+        stateView.setLayoutParams(slp);
+        root.addView(stateView);
 
         root.addView(label("Numero della centrale"));
         numberField = new EditText(this);
@@ -249,6 +261,7 @@ public class MainActivity extends Activity
                     PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
             pendingLabel = label;
+            pendingMode = mode;
             waitingSince = System.currentTimeMillis();
             handler.removeCallbacks(timeout);
             handler.postDelayed(timeout, REPLY_TIMEOUT_MS);
@@ -287,10 +300,43 @@ public class MainActivity extends Activity
                         + "). Possibile anomalia o PIN errato.", RED);
             } else if (up.contains("OK")) {
                 setStatus(pendingLabel + ": CONFERMATO ✓", GREEN);
+                Prefs.get(this).edit()
+                        .putString(Prefs.KEY_STATE_MODE, pendingMode)
+                        .putLong(Prefs.KEY_STATE_TIME, time)
+                        .apply();
+                showState();
             } else {
                 setStatus(pendingLabel + ": risposta ricevuta", GREY);
             }
         }
+    }
+
+    /** Shows the last state the panel confirmed with OK (not a live reading). */
+    private void showState() {
+        SharedPreferences p = Prefs.get(this);
+        String mode = p.getString(Prefs.KEY_STATE_MODE, "");
+        long time = p.getLong(Prefs.KEY_STATE_TIME, 0);
+        String name; int color;
+        switch (mode) {
+            case "A": name = "INSERITO TOTALE"; color = RED; break;
+            case "H": name = "INSERITO PARZIALE"; color = ORANGE; break;
+            case "D": name = "DISINSERITO"; color = GREEN; break;
+            default:  name = null; color = GREY;
+        }
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(dp(10));
+        if (name == null) {
+            stateView.setText("Ultimo stato confermato: nessuno");
+            stateView.setTextColor(GREY);
+            bg.setColor(Color.parseColor("#F1F1F1"));
+        } else {
+            stateView.setText("Ultimo stato confermato:\n" + name + "\n"
+                    + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                      .format(new Date(time)));
+            stateView.setTextColor(Color.WHITE);
+            bg.setColor(color);
+        }
+        stateView.setBackground(bg);
     }
 
     // ---------------------------------------------------------------- permissions

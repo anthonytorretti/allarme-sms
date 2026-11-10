@@ -10,6 +10,8 @@ final class Prefs {
     static final String KEY_PIN = "pin";
     static final String KEY_REPLY_TEXT = "reply_text";
     static final String KEY_REPLY_TIME = "reply_time";
+    static final String KEY_STATE_MODE = "state_mode";
+    static final String KEY_STATE_TIME = "state_time";
 
     /** Keyword expected by the panel in front of the PIN. */
     static final String KEYWORD = "PROG";
