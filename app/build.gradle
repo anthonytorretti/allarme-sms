@@ -14,7 +14,19 @@ android {
         versionName '1.1'
     }
 
+    signingConfigs {
+        fixed {
+            storeFile file('allarme.keystore')
+            storePassword 'allarme123'
+            keyAlias 'allarme'
+            keyPassword 'allarme123'
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig signingConfigs.fixed
+        }
         release {
             minifyEnabled false
         }
