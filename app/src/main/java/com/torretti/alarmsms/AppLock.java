@@ -106,6 +106,29 @@ final class AppLock {
         }
     }
 
+    /** Asks fingerprint / phone lock again before showing something sensitive. */
+    static void confirm(Activity a, String why, Runnable onOk) {
+        KeyguardManager km = (KeyguardManager) a.getSystemService(Context.KEYGUARD_SERVICE);
+        if (km == null || !km.isDeviceSecure() || Build.VERSION.SDK_INT < 28) { onOk.run(); return; }
+        BiometricPrompt.Builder b = new BiometricPrompt.Builder(a)
+                .setTitle("Allarme Rolando")
+                .setSubtitle(why);
+        if (Build.VERSION.SDK_INT >= 30) {
+            b.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG
+                    | BiometricManager.Authenticators.BIOMETRIC_WEAK
+                    | BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+        } else {
+            b.setDeviceCredentialAllowed(true);
+        }
+        b.build().authenticate(new CancellationSignal(), a.getMainExecutor(),
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override
+                    public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult r) {
+                        onOk.run();
+                    }
+                });
+    }
+
     /** Hides the screen content while the app is locked. */
     private static void show(Activity a, boolean visible) {
         a.getWindow().getDecorView().setAlpha(visible ? 1f : 0f);

@@ -83,21 +83,16 @@ public class AdvancedActivity extends BaseSmsActivity {
     private void showSavedUsers() {
         String raw = Prefs.get(this).getString(Prefs.KEY_USERS_TEXT, null);
         if (raw == null) { toast("Nessun elenco salvato: premi prima «Leggi utenti e PIN»"); return; }
-        new Form(this)
-                .note("Inserisci il PIN della centrale salvato in Impostazioni.")
-                .text("pin", "PIN", "", 8, true)
-                .show("Utenti e PIN", f -> {
-                    if (!f.text("pin").equals(Prefs.pin(this))) return "PIN errato";
-                    String nice = Panel.describe(raw);
-                    long t = Prefs.get(this).getLong(Prefs.KEY_USERS_TIME, 0);
-                    new android.app.AlertDialog.Builder(this)
-                            .setTitle("Utenti e PIN")
-                            .setMessage((nice != null ? nice : raw) + "\n\nLetto il "
-                                    + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(t)))
-                            .setPositiveButton("Chiudi", null)
-                            .show();
-                    return null;
-                });
+        AppLock.confirm(this, "Conferma per vedere utenti e PIN", () -> {
+            String nice = Panel.describe(raw);
+            long t = Prefs.get(this).getLong(Prefs.KEY_USERS_TIME, 0);
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("Utenti e PIN")
+                    .setMessage((nice != null ? nice : raw) + "\n\nLetto il "
+                            + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(t)))
+                    .setPositiveButton("Chiudi", null)
+                    .show();
+        });
     }
 
     private void editUser() {
