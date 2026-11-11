@@ -89,8 +89,7 @@ final class AppLock {
 
                     @Override
                     public void onAuthenticationError(int code, CharSequence msg) {
-                        if (code == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED
-                                || code == BiometricPrompt.BIOMETRIC_ERROR_NEGATIVE_BUTTON) {
+                        if (code == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED) {
                             prompting = false;
                             a.finishAffinity();       // user said no: close the app
                         } else {
