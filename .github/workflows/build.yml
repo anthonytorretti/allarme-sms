@@ -20,6 +20,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Decrypt signing key
+        env:
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+        run: |
+          if [ -z "$KEYSTORE_PASS" ]; then
+            echo "::error::Manca il secret KEYSTORE_PASS (Settings > Secrets and variables > Actions)"; exit 1
+          fi
+          openssl enc -d -aes-256-cbc -pbkdf2 -in app/allarme.keystore.enc -out app/allarme.keystore -pass env:KEYSTORE_PASS
       - name: Build debug APK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties

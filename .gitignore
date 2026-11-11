@@ -3,3 +3,6 @@ build/
 local.properties
 .idea/
 *.iml
+
+# signing key: only the encrypted copy is committed
+app/allarme.keystore
