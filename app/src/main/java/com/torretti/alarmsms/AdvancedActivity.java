@@ -20,10 +20,14 @@ public class AdvancedActivity extends BaseSmsActivity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(pad, pad + dp(16), pad, pad);
+        root.setBackgroundColor(BG);
+        getWindow().setStatusBarColor(BG);
+        getWindow().setNavigationBarColor(BG);
 
         TextView title = new TextView(this);
         title.setText("Funzioni avanzate");
         title.setTextSize(24);
+        title.setTextColor(TEXT);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         root.addView(title);
 
@@ -59,6 +63,8 @@ public class AdvancedActivity extends BaseSmsActivity {
         root.addView(bigButton("Comando manuale", GREY, v -> manualCommand()));
 
         ScrollView sv = new ScrollView(this);
+        sv.setBackgroundColor(BG);
+        sv.setFillViewport(true);
         sv.addView(root);
         setContentView(sv);
     }

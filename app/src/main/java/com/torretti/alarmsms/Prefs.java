@@ -13,6 +13,8 @@ final class Prefs {
     static final String KEY_REPLY_TIME = "reply_time";
     static final String KEY_STATE_MODE = "state_mode";
     static final String KEY_STATE_TIME = "state_time";
+    /** "app" = last command sent by this app, "centrale" = read from the panel (MOD?:). */
+    static final String KEY_STATE_SOURCE = "state_source";
 
     /** Factory/default keyword expected by the panel in front of the PIN. */
     static final String DEFAULT_KEYWORD = "PROG";

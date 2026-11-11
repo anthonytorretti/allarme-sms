@@ -29,11 +29,15 @@ import android.widget.Toast;
 public abstract class BaseSmsActivity extends Activity
         implements SharedPreferences.OnSharedPreferenceChangeListener {
 
-    static final int GREEN = Color.parseColor("#2E7D32");
-    static final int RED = Color.parseColor("#C62828");
-    static final int ORANGE = Color.parseColor("#EF6C00");
-    static final int BLUE = Color.parseColor("#1565C0");
-    static final int GREY = Color.parseColor("#616161");
+    static final int GREEN = Color.parseColor("#34D399");   // disinserito
+    static final int RED = Color.parseColor("#FF6B4A");     // totale
+    static final int ORANGE = Color.parseColor("#F5A524");  // parziale
+    static final int BLUE = Color.parseColor("#4C8DFF");
+    static final int GREY = Color.parseColor("#8B95A3");    // testo secondario
+    static final int BG = Color.parseColor("#0B0D10");
+    static final int CARD = Color.parseColor("#12151A");
+    static final int BORDER = Color.parseColor("#1F242C");
+    static final int TEXT = Color.parseColor("#E8ECF1");
 
     private static final String ACTION_SENT = "com.torretti.alarmsms.SMS_SENT";
     private static final long REPLY_TIMEOUT_MS = 3 * 60 * 1000;
@@ -50,6 +54,7 @@ public abstract class BaseSmsActivity extends Activity
         if (waitingSince != 0) {
             waitingSince = 0;
             pendingOnOk = null;
+            onWaitingChanged();
             setStatus("Nessuna risposta dalla centrale dopo 3 minuti. "
                     + "Se succede spesso, controlla il credito della SIM dell'allarme.", ORANGE);
         }
@@ -64,6 +69,7 @@ public abstract class BaseSmsActivity extends Activity
                 waitingSince = 0;
                 pendingOnOk = null;
                 handler.removeCallbacks(timeout);
+                onWaitingChanged();
                 setStatus("Invio SMS non riuscito (codice " + getResultCode()
                         + "). Controlla credito e segnale del tuo telefono.", RED);
             }
@@ -143,6 +149,7 @@ public abstract class BaseSmsActivity extends Activity
             handler.removeCallbacks(timeout);
             handler.postDelayed(timeout, REPLY_TIMEOUT_MS);
             setStatus(label + ": invio in corso…", GREY);
+            onWaitingChanged();
             java.util.ArrayList<String> parts = sms.divideMessage(body);
             if (parts.size() > 1) {
                 java.util.ArrayList<PendingIntent> pis = new java.util.ArrayList<>();
@@ -154,6 +161,7 @@ public abstract class BaseSmsActivity extends Activity
         } catch (Exception e) {
             waitingSince = 0;
             pendingOnOk = null;
+            onWaitingChanged();
             setStatus("Errore: " + e.getMessage(), RED);
         }
     }
@@ -169,12 +177,14 @@ public abstract class BaseSmsActivity extends Activity
         // A status reply ("MOD?:A") always updates the stored state.
         String mode = Panel.parseMode(text);
         if (mode != null && time > p.getLong(Prefs.KEY_STATE_TIME, 0)) {
-            p.edit().putString(Prefs.KEY_STATE_MODE, mode).putLong(Prefs.KEY_STATE_TIME, time).apply();
+            p.edit().putString(Prefs.KEY_STATE_MODE, mode).putLong(Prefs.KEY_STATE_TIME, time)
+                    .putString(Prefs.KEY_STATE_SOURCE, "centrale").apply();
         }
 
         boolean answersCommand = waitingSince != 0 && time >= waitingSince;
         if (answersCommand) {
             waitingSince = 0;
+            onWaitingChanged();
             handler.removeCallbacks(timeout);
             String up = text.toUpperCase();
             if (up.contains("ERROR")) {
@@ -191,6 +201,11 @@ public abstract class BaseSmsActivity extends Activity
         onReply(text, time, answersCommand);
     }
 
+    /** Called whenever the "waiting for a reply" state changes. */
+    protected void onWaitingChanged() {}
+
+    protected boolean isWaiting() { return waitingSince != 0; }
+
     /** Called with the latest reply from the panel (text may be null if none yet). */
     protected abstract void onReply(String text, long time, boolean answersLastCommand);
 
@@ -204,8 +219,8 @@ public abstract class BaseSmsActivity extends Activity
 
     protected TextView makeStatusView() {
         statusView = new TextView(this);
-        statusView.setTextSize(16);
-        statusView.setTypeface(Typeface.DEFAULT_BOLD);
+        statusView.setTextSize(14);
+        statusView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         statusView.setText("Pronto");
         statusView.setTextColor(GREY);
         statusView.setPadding(0, dp(14), 0, 0);
@@ -215,13 +230,15 @@ public abstract class BaseSmsActivity extends Activity
     protected Button bigButton(String text, int color, View.OnClickListener l) {
         Button btn = new Button(this);
         btn.setText(text);
-        btn.setTextColor(Color.WHITE);
-        btn.setTextSize(17);
-        btn.setTypeface(Typeface.DEFAULT_BOLD);
+        btn.setTextColor(color == GREY ? TEXT : color);
+        btn.setTextSize(15);
+        btn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         btn.setAllCaps(false);
+        btn.setStateListAnimator(null);
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(color);
-        bg.setCornerRadius(dp(10));
+        bg.setColor(CARD);
+        bg.setStroke(dp(1), color == GREY ? BORDER : color);
+        bg.setCornerRadius(dp(14));
         btn.setBackground(bg);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(58));
@@ -242,20 +259,26 @@ public abstract class BaseSmsActivity extends Activity
     protected TextView section(String s) {
         TextView t = new TextView(this);
         t.setText(s);
-        t.setTextSize(18);
-        t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setTextSize(12);
+        t.setLetterSpacing(0.12f);
+        t.setAllCaps(true);
+        t.setTextColor(GREY);
+        t.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         t.setPadding(0, dp(22), 0, 0);
         return t;
     }
 
     protected TextView box() {
         TextView v = new TextView(this);
-        v.setTextSize(15);
-        v.setPadding(dp(12), dp(12), dp(12), dp(12));
+        v.setTextSize(13);
+        v.setTextColor(Color.parseColor("#C9D1DB"));
+        v.setTypeface(Typeface.MONOSPACE);
+        v.setPadding(dp(16), dp(14), dp(16), dp(14));
         v.setTextIsSelectable(true);
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.parseColor("#F1F1F1"));
-        bg.setCornerRadius(dp(8));
+        bg.setColor(CARD);
+        bg.setStroke(dp(1), BORDER);
+        bg.setCornerRadius(dp(16));
         v.setBackground(bg);
         return v;
     }
