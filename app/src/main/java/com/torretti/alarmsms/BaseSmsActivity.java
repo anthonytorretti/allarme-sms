@@ -91,6 +91,19 @@ public abstract class BaseSmsActivity extends Activity
         super.onResume();
         Prefs.get(this).registerOnSharedPreferenceChangeListener(this);
         checkReply();
+        AppLock.require(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        AppLock.leftApp();
+    }
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        AppLock.onResult(this, req, res);
     }
 
     @Override
@@ -174,6 +187,11 @@ public abstract class BaseSmsActivity extends Activity
         long time = p.getLong(Prefs.KEY_REPLY_TIME, 0);
         if (text == null) { onReply(null, 0, false); return; }
 
+        // The user/PIN list is kept, but only shown after asking the alarm PIN.
+        if (text.contains("PIN?:") && time > p.getLong(Prefs.KEY_USERS_TIME, 0)) {
+            p.edit().putString(Prefs.KEY_USERS_TEXT, text).putLong(Prefs.KEY_USERS_TIME, time).apply();
+        }
+
         // A status reply ("MOD?:A") always updates the stored state.
         String mode = Panel.parseMode(text);
         if (mode != null && time > p.getLong(Prefs.KEY_STATE_TIME, 0)) {
@@ -189,7 +207,7 @@ public abstract class BaseSmsActivity extends Activity
             String up = text.toUpperCase();
             if (up.contains("ERROR")) {
                 pendingOnOk = null;
-                setStatus(pendingLabel + ": RIFIUTATO dalla centrale (" + text + ")", RED);
+                setStatus(pendingLabel + ": RIFIUTATO dalla centrale (" + Prefs.safe(this, text) + ")", RED);
             } else {
                 Runnable r = pendingOnOk;
                 pendingOnOk = null;

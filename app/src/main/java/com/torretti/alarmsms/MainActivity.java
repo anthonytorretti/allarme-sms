@@ -200,7 +200,7 @@ public class MainActivity extends BaseSmsActivity {
             replyView.setText("Nessuna risposta ricevuta");
             replyTime.setText("");
         } else {
-            replyView.setText(text);
+            replyView.setText(Prefs.safe(this, text));
             replyTime.setText(when(time));
         }
         showState();

@@ -39,6 +39,7 @@ public class AdvancedActivity extends BaseSmsActivity {
         root.addView(section("Utenti e codici"));
         root.addView(bigButton("Leggi utenti e PIN", BLUE, v ->
                 confirmAndSend("Lettura utenti", "Chiedere alla centrale l'elenco utenti?", "PIN?:", null)));
+        root.addView(bigButton("Mostra utenti e PIN salvati", GREY, v -> showSavedUsers()));
         root.addView(bigButton("Modifica utente / PIN", GREY, v -> editUser()));
         root.addView(bigButton("Cambia parola chiave SMS", GREY, v -> editKeyword()));
 
@@ -72,12 +73,32 @@ public class AdvancedActivity extends BaseSmsActivity {
     @Override
     protected void onReply(String text, long time, boolean answersLastCommand) {
         if (text == null) { resultView.setText("Nessuna risposta ricevuta"); return; }
-        String nice = Panel.describe(text);
+        String nice = text.contains("PIN?:") ? null : Panel.describe(text);
         resultView.setText(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
-                .format(new Date(time)) + "\n" + (nice != null ? nice : text));
+                .format(new Date(time)) + "\n" + (nice != null ? Prefs.safe(this, nice) : Prefs.safe(this, text)));
     }
 
     // ---------------------------------------------------------------- users
+
+    private void showSavedUsers() {
+        String raw = Prefs.get(this).getString(Prefs.KEY_USERS_TEXT, null);
+        if (raw == null) { toast("Nessun elenco salvato: premi prima «Leggi utenti e PIN»"); return; }
+        new Form(this)
+                .note("Inserisci il PIN della centrale salvato in Impostazioni.")
+                .text("pin", "PIN", "", 8, true)
+                .show("Utenti e PIN", f -> {
+                    if (!f.text("pin").equals(Prefs.pin(this))) return "PIN errato";
+                    String nice = Panel.describe(raw);
+                    long t = Prefs.get(this).getLong(Prefs.KEY_USERS_TIME, 0);
+                    new android.app.AlertDialog.Builder(this)
+                            .setTitle("Utenti e PIN")
+                            .setMessage((nice != null ? nice : raw) + "\n\nLetto il "
+                                    + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(t)))
+                            .setPositiveButton("Chiudi", null)
+                            .show();
+                    return null;
+                });
+    }
 
     private void editUser() {
         String[] users = {"Utente 1 (è anche il PIN per gli SMS)", "Utente 2", "Utente 3", "Utente 4"};

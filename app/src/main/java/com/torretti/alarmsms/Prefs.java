@@ -15,6 +15,8 @@ final class Prefs {
     static final String KEY_STATE_TIME = "state_time";
     /** "app" = last command sent by this app, "centrale" = read from the panel (MOD?:). */
     static final String KEY_STATE_SOURCE = "state_source";
+    static final String KEY_USERS_TEXT = "users_text";
+    static final String KEY_USERS_TIME = "users_time";
 
     /** Factory/default keyword expected by the panel in front of the PIN. */
     static final String DEFAULT_KEYWORD = "PROG";
@@ -35,6 +37,15 @@ final class Prefs {
     /** Full SMS text: "<keyword> <pin> <command>". */
     static String command(Context c, String cmd) {
         return keyword(c) + " " + pin(c) + " " + cmd;
+    }
+
+    /** Text safe to show on screen: hides the PIN and the user/PIN list. */
+    static String safe(Context c, String text) {
+        if (text == null) return null;
+        if (text.contains("PIN?:"))
+            return "Elenco utenti e PIN ricevuto e salvato.\nPer vederlo: Avanzate → «Mostra utenti e PIN salvati».";
+        String pin = pin(c);
+        return pin.length() >= 4 ? text.replace(pin, "••••") : text;
     }
 
     /** Keeps only digits and compares the last 9, so "+39 347..." matches "347...". */
