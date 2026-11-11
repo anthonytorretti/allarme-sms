@@ -60,7 +60,7 @@ final class AppLock {
 
     private static void biometric(Activity a) {
         BiometricPrompt.Builder b = new BiometricPrompt.Builder(a)
-                .setTitle("Sentinella")
+                .setTitle("Allarme Rolando")
                 .setSubtitle("Sblocca con impronta o con il PIN del telefono");
         if (Build.VERSION.SDK_INT >= 30) {
             b.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -89,7 +89,7 @@ final class AppLock {
 
     @SuppressWarnings("deprecation")
     private static void credential(Activity a, KeyguardManager km) {
-        Intent i = km.createConfirmDeviceCredentialIntent("Sentinella", "Sblocca con il PIN del telefono");
+        Intent i = km.createConfirmDeviceCredentialIntent("Allarme Rolando", "Sblocca con il PIN del telefono");
         if (i == null) { prompting = false; unlocked = true; show(a, true); return; }
         a.startActivityForResult(i, REQ_CREDENTIAL);
     }

@@ -51,7 +51,7 @@ public class MainActivity extends BaseSmsActivity {
         TextView kicker = text("CENTRALE URMET 1059", 12, GREY, false);
         kicker.setLetterSpacing(0.12f);
         titles.addView(kicker);
-        titles.addView(text("Allarme", 24, TEXT, true));
+        titles.addView(text("Allarme Rolando", 24, TEXT, true));
         header.addView(titles, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         header.addView(iconButton(R.drawable.ic_settings, "Impostazioni", v -> openSettings()));
         root.addView(header);
