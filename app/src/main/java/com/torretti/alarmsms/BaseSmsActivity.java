@@ -54,9 +54,13 @@ public abstract class BaseSmsActivity extends Activity
         if (waitingSince != 0) {
             waitingSince = 0;
             pendingOnOk = null;
+            SharedPreferences p = Prefs.get(BaseSmsActivity.this);
+            int misses = p.getInt(Prefs.KEY_MISSES, 0) + 1;
+            p.edit().putInt(Prefs.KEY_MISSES, misses).apply();
             onWaitingChanged();
-            setStatus("Nessuna risposta dalla centrale dopo 3 minuti. "
-                    + "Se succede spesso, controlla il credito della SIM dell'allarme.", ORANGE);
+            setStatus(misses >= 2
+                    ? "Nessuna risposta agli ultimi " + misses + " comandi: possibile CREDITO ESAURITO sulla SIM dell'allarme."
+                    : "Nessuna risposta dalla centrale dopo 3 minuti.", ORANGE);
         }
     };
 

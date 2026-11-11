@@ -25,6 +25,8 @@ import java.util.Locale;
 public class MainActivity extends BaseSmsActivity {
 
     private RingView ring;
+    private LinearLayout creditCard;
+    private TextView creditValue, creditNote;
     private TextView badge, stateName, stateSub, stateNote, replyView, replyTime;
     private final LinearLayout[] cards = new LinearLayout[3];
     private static final String[] MODES = {"A", "H", "D"};
@@ -145,6 +147,31 @@ public class MainActivity extends BaseSmsActivity {
         rcp.topMargin = dp(12);
         root.addView(replyCard, rcp);
 
+        // credit card
+        creditCard = new LinearLayout(this);
+        creditCard.setOrientation(LinearLayout.VERTICAL);
+        creditCard.setPadding(dp(16), dp(14), dp(16), dp(14));
+        creditCard.setBackground(rounded(CARD, BORDER, 16));
+        creditCard.setClickable(true);
+        creditCard.setFocusable(true);
+        creditCard.setContentDescription("Credito SIM allarme");
+        creditCard.setOnClickListener(v -> openCredit());
+        LinearLayout ch = new LinearLayout(this);
+        TextView ck = text("CREDITO SIM ALLARME", 11, GREY, false);
+        ck.setLetterSpacing(0.12f);
+        ch.addView(ck, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        ch.addView(text("Aggiorna ›", 11, BLUE, false));
+        creditCard.addView(ch);
+        creditValue = text("", 20, TEXT, true);
+        creditValue.setPadding(0, dp(6), 0, 0);
+        creditCard.addView(creditValue);
+        creditNote = text("", 12, GREY, false);
+        creditNote.setLineSpacing(0, 1.2f);
+        creditCard.addView(creditNote);
+        LinearLayout.LayoutParams ccp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        ccp.topMargin = dp(12);
+        root.addView(creditCard, ccp);
+
         ScrollView sv = new ScrollView(this);
         sv.setFillViewport(true);
         sv.addView(root);
@@ -172,6 +199,7 @@ public class MainActivity extends BaseSmsActivity {
     protected void onResume() {
         super.onResume();
         showState();
+        showCredit();
     }
 
     // ---------------------------------------------------------------- state
@@ -191,6 +219,7 @@ public class MainActivity extends BaseSmsActivity {
     public void onSharedPreferenceChanged(SharedPreferences p, String key) {
         super.onSharedPreferenceChanged(p, key);
         if (Prefs.KEY_STATE_TIME.equals(key) || Prefs.KEY_STATE_SOURCE.equals(key)) handler.post(this::showState);
+        if (Prefs.KEY_CREDIT.equals(key) || Prefs.KEY_MISSES.equals(key)) handler.post(this::showCredit);
     }
 
     @Override
@@ -269,6 +298,71 @@ public class MainActivity extends BaseSmsActivity {
         if (now.get(Calendar.YEAR) == c.get(Calendar.YEAR) && now.get(Calendar.DAY_OF_YEAR) == c.get(Calendar.DAY_OF_YEAR))
             return "ieri " + hm;
         return new SimpleDateFormat("d MMM HH:mm", Locale.ITALY).format(new Date(t));
+    }
+
+    // ---------------------------------------------------------------- credit
+
+    private void showCredit() {
+        if (creditValue == null) return;
+        SharedPreferences p = Prefs.get(this);
+        long c = p.getLong(Prefs.KEY_CREDIT, -1);
+        int misses = p.getInt(Prefs.KEY_MISSES, 0);
+        if (c < 0) {
+            creditValue.setText("Non impostato");
+            creditValue.setTextColor(GREY);
+        } else {
+            creditValue.setText(String.format(Locale.ITALY, "≈ %.2f €  stimati", c / 100.0));
+            creditValue.setTextColor(c < 100 ? ORANGE : TEXT);
+        }
+        String note;
+        if (misses >= 2) {
+            note = "La centrale non ha risposto agli ultimi " + misses + " comandi: possibile credito esaurito.";
+            creditNote.setTextColor(RED);
+        } else if (c < 0) {
+            note = "Tocca per inserire il credito dopo una ricarica: l'app scala il costo di ogni SMS della centrale.";
+            creditNote.setTextColor(GREY);
+        } else {
+            long t = p.getLong(Prefs.KEY_CREDIT_SET_TIME, 0);
+            note = "Stima: non conta gli SMS di allarme e i costi del piano. Aggiornato da te "
+                    + when(t) + ". Tocca per verificarlo su My Vodafone.";
+            creditNote.setTextColor(GREY);
+        }
+        creditNote.setText(note);
+    }
+
+    private void openCredit() {
+        SharedPreferences p = Prefs.get(this);
+        long c = p.getLong(Prefs.KEY_CREDIT, -1);
+        Form f = new Form(this)
+                .note("Inserisci il credito reale della SIM dell'allarme (per esempio subito dopo una ricarica, "
+                        + "o dopo averlo controllato su My Vodafone).")
+                .text("eur", "Credito attuale (€)", c >= 0 ? String.format(Locale.ITALY, "%.2f", c / 100.0) : "", 8, false)
+                .text("cost", "Costo di un SMS della centrale (€)",
+                        String.format(Locale.ITALY, "%.2f", p.getInt(Prefs.KEY_SMS_COST, 29) / 100.0), 5, false);
+        f.show("Credito SIM allarme", form -> {
+            try {
+                String e = form.text("eur").replace(',', '.').replace("€", "").trim();
+                String k = form.text("cost").replace(',', '.').replace("€", "").trim();
+                SharedPreferences.Editor ed = p.edit();
+                if (e.isEmpty()) ed.putLong(Prefs.KEY_CREDIT, -1);
+                else ed.putLong(Prefs.KEY_CREDIT, Math.round(Double.parseDouble(e) * 100));
+                if (!k.isEmpty()) ed.putInt(Prefs.KEY_SMS_COST, (int) Math.round(Double.parseDouble(k) * 100));
+                ed.putLong(Prefs.KEY_CREDIT_SET_TIME, System.currentTimeMillis()).putInt(Prefs.KEY_MISSES, 0).apply();
+                showCredit();
+                return null;
+            } catch (NumberFormatException ex) {
+                return "Importo non valido (es. 12,50)";
+            }
+        }, "Apri My Vodafone", this::openVodafone);
+    }
+
+    private void openVodafone() {
+        Intent i = getPackageManager().getLaunchIntentForPackage(Prefs.VODAFONE_PACKAGE);
+        if (i == null) {
+            i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=" + Prefs.VODAFONE_PACKAGE));
+            toast("My Vodafone non è installata: si apre il Play Store");
+        }
+        try { startActivity(i); } catch (Exception e) { toast("Impossibile aprire My Vodafone"); }
     }
 
     // ---------------------------------------------------------------- settings

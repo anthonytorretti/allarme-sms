@@ -128,7 +128,10 @@ final class Form {
     }
 
     /** Shows the form; when "Avanti" is pressed and submit returns null the dialog closes. */
-    void show(String title, OnSubmit submit) {
+    void show(String title, OnSubmit submit) { show(title, submit, null, null); }
+
+    /** Same, with an extra neutral button (e.g. "Apri My Vodafone"). */
+    void show(String title, OnSubmit submit, String neutralLabel, Runnable neutral) {
         applyRules();
         ScrollView sv = new ScrollView(ctx);
         sv.addView(root);
@@ -137,6 +140,7 @@ final class Form {
                 .setView(sv)
                 .setPositiveButton("Avanti", null)
                 .setNegativeButton("Annulla", null)
+                .setNeutralButton(neutralLabel, neutral == null ? null : (x, y) -> neutral.run())
                 .create();
         d.setOnShowListener(x -> d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String err = submit.submit(this);

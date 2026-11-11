@@ -16,6 +16,13 @@ final class Prefs {
     /** "app" = last command sent by this app, "centrale" = read from the panel (MOD?:). */
     static final String KEY_STATE_SOURCE = "state_source";
     static final String KEY_USERS_TEXT = "users_text";
+    /** Commands in a row that got no reply (hint that the alarm SIM is out of credit). */
+    static final String KEY_MISSES = "misses";
+    /** Estimated credit of the alarm SIM in cents (-1 = not set) and cost of one SMS. */
+    static final String KEY_CREDIT = "credit_cents";
+    static final String KEY_SMS_COST = "sms_cost_cents";
+    static final String KEY_CREDIT_SET_TIME = "credit_set_time";
+    static final String VODAFONE_PACKAGE = "it.vodafone.my190";
     static final String KEY_USERS_TIME = "users_time";
 
     /** Factory/default keyword expected by the panel in front of the PIN. */

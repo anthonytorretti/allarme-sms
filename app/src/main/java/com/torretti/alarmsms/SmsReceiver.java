@@ -21,6 +21,15 @@ public class SmsReceiver extends BroadcastReceiver {
         StringBuilder body = new StringBuilder();
         for (SmsMessage m : parts) body.append(m.getDisplayMessageBody());
 
+        android.content.SharedPreferences p = Prefs.get(context);
+        long credit = p.getLong(Prefs.KEY_CREDIT, -1);
+        if (credit >= 0) {
+            // every SMS the panel sends costs credit on its SIM (multi-part = several SMS)
+            credit = Math.max(0, credit - (long) p.getInt(Prefs.KEY_SMS_COST, 29) * parts.length);
+            p.edit().putLong(Prefs.KEY_CREDIT, credit).apply();
+        }
+        p.edit().putInt(Prefs.KEY_MISSES, 0).apply();
+
         Prefs.get(context).edit()
                 .putString(Prefs.KEY_REPLY_TEXT, body.toString().trim())
                 .putLong(Prefs.KEY_REPLY_TIME, System.currentTimeMillis())
