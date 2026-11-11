@@ -54,11 +54,19 @@ final class AppLock {
 
         show(a, false);
         prompting = true;
-        if (Build.VERSION.SDK_INT >= 28) biometric(a);
-        else credential(a, km);
+        // wait until the window is on screen, otherwise the prompt can be cancelled at launch
+        a.getWindow().getDecorView().post(() -> {
+            try {
+                if (Build.VERSION.SDK_INT >= 28) biometric(a, km);
+                else credential(a, km);
+            } catch (Exception e) {
+                // never lock the user out because of a prompt problem: fall back to the phone PIN screen
+                try { credential(a, km); } catch (Exception e2) { prompting = false; unlocked = true; show(a, true); }
+            }
+        });
     }
 
-    private static void biometric(Activity a) {
+    private static void biometric(Activity a, KeyguardManager km) {
         BiometricPrompt.Builder b = new BiometricPrompt.Builder(a)
                 .setTitle("Allarme Rolando")
                 .setSubtitle("Sblocca con impronta o con il PIN del telefono");
@@ -81,8 +89,15 @@ final class AppLock {
 
                     @Override
                     public void onAuthenticationError(int code, CharSequence msg) {
-                        prompting = false;
-                        a.finishAffinity();
+                        if (code == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED
+                                || code == BiometricPrompt.BIOMETRIC_ERROR_NEGATIVE_BUTTON) {
+                            prompting = false;
+                            a.finishAffinity();       // user said no: close the app
+                        } else {
+                            // any other problem (cancelled by the system, sensor busy…): use the phone PIN screen
+                            try { credential(a, km); }
+                            catch (Exception e) { prompting = false; unlocked = true; show(a, true); }
+                        }
                     }
                 });
     }
@@ -120,13 +135,17 @@ final class AppLock {
         } else {
             b.setDeviceCredentialAllowed(true);
         }
-        b.build().authenticate(new CancellationSignal(), a.getMainExecutor(),
-                new BiometricPrompt.AuthenticationCallback() {
-                    @Override
-                    public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult r) {
-                        onOk.run();
-                    }
-                });
+        try {
+            b.build().authenticate(new CancellationSignal(), a.getMainExecutor(),
+                    new BiometricPrompt.AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult r) {
+                            onOk.run();
+                        }
+                    });
+        } catch (Exception e) {
+            Toast.makeText(a, "Impossibile chiedere l'impronta: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     /** Hides the screen content while the app is locked. */
