@@ -17,7 +17,7 @@ public class RingView extends View {
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF arc = new RectF();
     private Drawable icon;
-    private int color = 0xFF8B95A3;
+    private int color = BaseSmsActivity.GREY;
     private boolean busy;
     private float phase;      // 0..1 halo pulse
     private float spin;       // degrees
@@ -27,10 +27,10 @@ public class RingView extends View {
         super(c);
         halo.setStyle(Paint.Style.STROKE);
         thin.setStyle(Paint.Style.STROKE);
-        thin.setColor(0xFF1F242C);
+        thin.setColor(BaseSmsActivity.BORDER);
         ring.setStyle(Paint.Style.STROKE);
         ring.setStrokeCap(Paint.Cap.ROUND);
-        fill.setColor(0xFF12151A);
+        fill.setColor(BaseSmsActivity.CARD);
         anim = ValueAnimator.ofFloat(0f, 1f);
         anim.setDuration(2400);
         anim.setRepeatCount(ValueAnimator.INFINITE);

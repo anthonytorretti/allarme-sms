@@ -21,8 +21,7 @@ public class AdvancedActivity extends BaseSmsActivity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(pad, pad + dp(16), pad, pad);
         root.setBackgroundColor(BG);
-        getWindow().setStatusBarColor(BG);
-        getWindow().setNavigationBarColor(BG);
+        styleSystemBars();
 
         TextView title = new TextView(this);
         title.setText("Funzioni avanzate");

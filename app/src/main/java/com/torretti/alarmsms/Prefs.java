@@ -22,6 +22,7 @@ final class Prefs {
     static final String KEY_CREDIT = "credit_cents";
     static final String KEY_SMS_COST = "sms_cost_cents";
     static final String KEY_CREDIT_SET_TIME = "credit_set_time";
+    static final String KEY_THEME = "theme";
     static final String VODAFONE_PACKAGE = "it.vodafone.my190";
     static final String KEY_USERS_TIME = "users_time";
 

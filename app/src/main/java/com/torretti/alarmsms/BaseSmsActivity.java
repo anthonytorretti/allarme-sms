@@ -29,15 +29,54 @@ import android.widget.Toast;
 public abstract class BaseSmsActivity extends Activity
         implements SharedPreferences.OnSharedPreferenceChangeListener {
 
-    static final int GREEN = Color.parseColor("#34D399");   // disinserito
-    static final int RED = Color.parseColor("#FF6B4A");     // totale
-    static final int ORANGE = Color.parseColor("#F5A524");  // parziale
-    static final int BLUE = Color.parseColor("#4C8DFF");
-    static final int GREY = Color.parseColor("#8B95A3");    // testo secondario
-    static final int BG = Color.parseColor("#0B0D10");
-    static final int CARD = Color.parseColor("#12151A");
-    static final int BORDER = Color.parseColor("#1F242C");
-    static final int TEXT = Color.parseColor("#E8ECF1");
+    // Palette: set by applyTheme() before any view is built.
+    static int GREEN, RED, ORANGE, BLUE;   // disinserito, totale, parziale, info
+    static int GREY;                       // testo secondario
+    static int BG, CARD, CARD_ACTIVE, BORDER, BORDER_STRONG, TEXT, SUBTEXT, NAV_BG, LINE;
+    static boolean DARK = true;
+
+    /** "dark", "light" or "auto" (follows the phone). */
+    static boolean isDark(Context c) {
+        String t = Prefs.get(c).getString(Prefs.KEY_THEME, "dark");
+        if ("auto".equals(t)) {
+            int night = c.getResources().getConfiguration().uiMode
+                    & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+            return night == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        }
+        return !"light".equals(t);
+    }
+
+    static void applyPalette(boolean dark) {
+        DARK = dark;
+        if (dark) {
+            GREEN = 0xFF34D399; RED = 0xFFFF6B4A; ORANGE = 0xFFF5A524; BLUE = 0xFF4C8DFF;
+            GREY = 0xFF8B95A3; BG = 0xFF0B0D10; CARD = 0xFF12151A; CARD_ACTIVE = 0xFF161A20;
+            BORDER = 0xFF1F242C; BORDER_STRONG = 0xFF252B34; TEXT = 0xFFE8ECF1; SUBTEXT = 0xFFC9D1DB;
+            NAV_BG = 0xFF0E1114; LINE = 0xFF1A1E25;
+        } else {
+            GREEN = 0xFF0E8F63; RED = 0xFFD9432B; ORANGE = 0xFFB46F00; BLUE = 0xFF2F6FE0;
+            GREY = 0xFF5F6B7A; BG = 0xFFF4F6F8; CARD = 0xFFFFFFFF; CARD_ACTIVE = 0xFFFFFFFF;
+            BORDER = 0xFFE1E5EA; BORDER_STRONG = 0xFFD3D9E0; TEXT = 0xFF12151A; SUBTEXT = 0xFF3A4350;
+            NAV_BG = 0xFFFFFFFF; LINE = 0xFFE1E5EA;
+        }
+    }
+
+    /** Call first thing in onCreate, before super.onCreate. */
+    protected void applyTheme() {
+        boolean dark = isDark(this);
+        applyPalette(dark);
+        setTheme(dark ? android.R.style.Theme_Material_NoActionBar
+                      : android.R.style.Theme_Material_Light_NoActionBar);
+    }
+
+    /** Colours the system bars to match the page. */
+    protected void styleSystemBars() {
+        getWindow().setStatusBarColor(BG);
+        getWindow().setNavigationBarColor(DARK ? BG : NAV_BG);
+        int flags = 0;
+        if (!DARK) flags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        getWindow().getDecorView().setSystemUiVisibility(flags);
+    }
 
     private static final String ACTION_SENT = "com.torretti.alarmsms.SMS_SENT";
     private static final long REPLY_TIMEOUT_MS = 3 * 60 * 1000;
@@ -84,6 +123,7 @@ public abstract class BaseSmsActivity extends Activity
 
     @Override
     protected void onCreate(Bundle b) {
+        applyTheme();
         super.onCreate(b);
         IntentFilter f = new IntentFilter(ACTION_SENT);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(sentReceiver, f, Context.RECEIVER_NOT_EXPORTED);
@@ -293,7 +333,7 @@ public abstract class BaseSmsActivity extends Activity
     protected TextView box() {
         TextView v = new TextView(this);
         v.setTextSize(13);
-        v.setTextColor(Color.parseColor("#C9D1DB"));
+        v.setTextColor(SUBTEXT);
         v.setTypeface(Typeface.MONOSPACE);
         v.setPadding(dp(16), dp(14), dp(16), dp(14));
         v.setTextIsSelectable(true);

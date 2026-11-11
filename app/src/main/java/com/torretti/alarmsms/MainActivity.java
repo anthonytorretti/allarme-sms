@@ -34,8 +34,7 @@ public class MainActivity extends BaseSmsActivity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        getWindow().setStatusBarColor(BG);
-        getWindow().setNavigationBarColor(BG);
+        styleSystemBars();
 
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
@@ -78,7 +77,7 @@ public class MainActivity extends BaseSmsActivity {
         stateName = centered(text("", 30, TEXT, true));
         stateName.setLetterSpacing(0.02f);
         root.addView(stateName);
-        stateSub = centered(text("", 13, 0xFFC9D1DB, false));
+        stateSub = centered(text("", 13, SUBTEXT, false));
         root.addView(stateSub);
         stateNote = centered(text("", 12, GREY, false));
         stateNote.setPadding(dp(16), dp(6), dp(16), 0);
@@ -108,14 +107,14 @@ public class MainActivity extends BaseSmsActivity {
         // read state
         LinearLayout read = new LinearLayout(this);
         read.setGravity(Gravity.CENTER);
-        read.setBackground(rounded(CARD, 0xFF252B34, 14));
+        read.setBackground(rounded(CARD, BORDER_STRONG, 14));
         read.setClickable(true);
         read.setFocusable(true);
         read.setContentDescription("Leggi stato dalla centrale");
         ImageView ri = new ImageView(this);
-        ri.setImageDrawable(tinted(R.drawable.ic_refresh, 0xFFC9D1DB));
+        ri.setImageDrawable(tinted(R.drawable.ic_refresh, SUBTEXT));
         read.addView(ri, new LinearLayout.LayoutParams(dp(18), dp(18)));
-        TextView rt = text("  Leggi stato dalla centrale", 14, 0xFFC9D1DB, false);
+        TextView rt = text("  Leggi stato dalla centrale", 14, SUBTEXT, false);
         rt.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         read.addView(rt);
         read.setOnClickListener(v -> confirmAndSend("Lettura stato",
@@ -138,7 +137,7 @@ public class MainActivity extends BaseSmsActivity {
         replyTime = text("", 11, GREY, false);
         rh.addView(replyTime);
         replyCard.addView(rh);
-        replyView = text("", 13, 0xFFC9D1DB, false);
+        replyView = text("", 13, SUBTEXT, false);
         replyView.setTypeface(Typeface.MONOSPACE);
         replyView.setPadding(0, dp(8), 0, 0);
         replyView.setTextIsSelectable(true);
@@ -179,14 +178,14 @@ public class MainActivity extends BaseSmsActivity {
 
         // bottom bar
         LinearLayout nav = new LinearLayout(this);
-        nav.setBackgroundColor(0xFF0E1114);
+        nav.setBackgroundColor(NAV_BG);
         nav.setPadding(0, dp(10), 0, dp(14));
         nav.addView(navItem(R.drawable.ic_shield, "Allarme", true, null), navLp());
         nav.addView(navItem(R.drawable.ic_list, "Avanzate", false,
                 v -> startActivity(new Intent(this, AdvancedActivity.class))), navLp());
         nav.addView(navItem(R.drawable.ic_settings, "Impostazioni", false, v -> openSettings()), navLp());
         View line = new View(this);
-        line.setBackgroundColor(0xFF1A1E25);
+        line.setBackgroundColor(LINE);
         page.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
         page.addView(nav);
 
@@ -283,7 +282,7 @@ public class MainActivity extends BaseSmsActivity {
         int[] colors = {RED, ORANGE, GREEN};
         for (int i = 0; i < 3; i++) {
             boolean on = MODES[i].equals(mode);
-            cards[i].setBackground(rounded(on ? 0xFF161A20 : CARD, on ? colors[i] : BORDER, 18, on ? 2 : 1));
+            cards[i].setBackground(rounded(on ? CARD_ACTIVE : CARD, on ? colors[i] : BORDER, 18, on ? 2 : 1));
         }
     }
 
@@ -385,6 +384,17 @@ public class MainActivity extends BaseSmsActivity {
         pin.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
         pin.setText(Prefs.pin(this));
         f.addView(pin);
+        TextView l3 = text("Tema", 13, GREY, false);
+        l3.setPadding(0, dp(12), 0, 0);
+        f.addView(l3);
+        String[] themeKeys = {"dark", "light", "auto"};
+        String[] themeLabels = {"Scuro", "Chiaro", "Automatico (come il telefono)"};
+        android.widget.Spinner theme = new android.widget.Spinner(this);
+        theme.setAdapter(new android.widget.ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, themeLabels));
+        String cur = Prefs.get(this).getString(Prefs.KEY_THEME, "dark");
+        for (int i = 0; i < themeKeys.length; i++) if (themeKeys[i].equals(cur)) theme.setSelection(i);
+        f.addView(theme);
         TextView note = text("Parola chiave SMS: " + Prefs.keyword(this) + " (si cambia da Avanzate)", 12, GREY, false);
         note.setPadding(0, dp(12), 0, 0);
         f.addView(note);
@@ -395,8 +405,10 @@ public class MainActivity extends BaseSmsActivity {
                     Prefs.get(this).edit()
                             .putString(Prefs.KEY_NUMBER, num.getText().toString().trim())
                             .putString(Prefs.KEY_PIN, pin.getText().toString().trim())
+                            .putString(Prefs.KEY_THEME, themeKeys[theme.getSelectedItemPosition()])
                             .apply();
                     toast("Impostazioni salvate");
+                    if (!themeKeys[theme.getSelectedItemPosition()].equals(cur)) recreate();
                 })
                 .setNegativeButton("Annulla", null)
                 .show();
@@ -445,7 +457,7 @@ public class MainActivity extends BaseSmsActivity {
         f.setFocusable(true);
         f.setOnClickListener(l);
         ImageView i = new ImageView(this);
-        i.setImageDrawable(tinted(res, 0xFFC9D1DB));
+        i.setImageDrawable(tinted(res, SUBTEXT));
         f.addView(i, new FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER));
         f.setLayoutParams(new LinearLayout.LayoutParams(dp(44), dp(44)));
         return f;
