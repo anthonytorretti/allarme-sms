@@ -159,6 +159,7 @@ public class MainActivity extends Activity
         root.addView(commandButton("Inserisci TOTALE", "Inserimento totale", "A", RED));
         root.addView(commandButton("Inserisci PARZIALE (casa)", "Inserimento parziale", "H", ORANGE));
         root.addView(commandButton("DISINSERISCI", "Disinserimento", "D", GREEN));
+        root.addView(commandButton("LEGGI STATO", "Lettura stato", "?", Color.parseColor("#1565C0")));
 
         root.addView(spacer(dp(18)));
         statusView = new TextView(this);
@@ -244,14 +245,17 @@ public class MainActivity extends Activity
         }
         new AlertDialog.Builder(this)
                 .setTitle(label)
-                .setMessage("Inviare il comando alla centrale?")
+                .setMessage("?".equals(mode) ? "Chiedere lo stato alla centrale?"
+                        : "Inviare il comando alla centrale?")
                 .setPositiveButton("Invia", (d, w) -> send(label, number, pin, mode))
                 .setNegativeButton("Annulla", null)
                 .show();
     }
 
     private void send(String label, String number, String pin, String mode) {
-        String body = Prefs.KEYWORD + " " + pin + " MODE:" + mode;
+        String body = "?".equals(mode)
+                ? Prefs.KEYWORD + " " + pin + " MOD?:"
+                : Prefs.KEYWORD + " " + pin + " MODE:" + mode;
         try {
             SmsManager sms = Build.VERSION.SDK_INT >= 31
                     ? getSystemService(SmsManager.class)
@@ -290,12 +294,24 @@ public class MainActivity extends Activity
         replyView.setText(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
                 .format(new Date(time)) + "\n" + text);
 
+        // A status reply ("MOD?:A", "MOD?:H", "MOD?:D") gives the real state.
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("MOD\\?:\\s*([AHD])").matcher(text.toUpperCase());
+        boolean isStatus = m.find();
+        if (isStatus && time > p.getLong(Prefs.KEY_STATE_TIME, 0)) {
+            p.edit().putString(Prefs.KEY_STATE_MODE, m.group(1))
+                    .putLong(Prefs.KEY_STATE_TIME, time).apply();
+            showState();
+        }
+
         // A reply that arrived after the last command closes the wait.
         if (waitingSince != 0 && time >= waitingSince) {
             waitingSince = 0;
             handler.removeCallbacks(timeout);
             String up = text.toUpperCase();
-            if (up.contains("ERROR")) {
+            if (isStatus) {
+                setStatus(pendingLabel + ": stato ricevuto ✓", GREEN);
+            } else if (up.contains("ERROR")) {
                 setStatus(pendingLabel + ": RIFIUTATO dalla centrale (" + text
                         + "). Possibile anomalia o PIN errato.", RED);
             } else if (up.contains("OK")) {
@@ -326,11 +342,11 @@ public class MainActivity extends Activity
         GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(dp(10));
         if (name == null) {
-            stateView.setText("Ultimo stato confermato: nessuno");
+            stateView.setText("Stato allarme: sconosciuto (premi LEGGI STATO)");
             stateView.setTextColor(GREY);
             bg.setColor(Color.parseColor("#F1F1F1"));
         } else {
-            stateView.setText("Ultimo stato confermato:\n" + name + "\n"
+            stateView.setText("Stato allarme:\n" + name + "\n"
                     + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                       .format(new Date(time)));
             stateView.setTextColor(Color.WHITE);
