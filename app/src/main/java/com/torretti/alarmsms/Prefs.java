@@ -3,23 +3,36 @@ package com.torretti.alarmsms;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-/** Settings and last-reply storage shared by the activity and the SMS receiver. */
+/** Settings and last-reply storage shared by the activities and the SMS receiver. */
 final class Prefs {
     static final String FILE = "alarm_sms";
     static final String KEY_NUMBER = "number";
     static final String KEY_PIN = "pin";
+    static final String KEY_KEYWORD = "keyword";
     static final String KEY_REPLY_TEXT = "reply_text";
     static final String KEY_REPLY_TIME = "reply_time";
     static final String KEY_STATE_MODE = "state_mode";
     static final String KEY_STATE_TIME = "state_time";
 
-    /** Keyword expected by the panel in front of the PIN. */
-    static final String KEYWORD = "PROG";
+    /** Factory/default keyword expected by the panel in front of the PIN. */
+    static final String DEFAULT_KEYWORD = "PROG";
 
     private Prefs() {}
 
     static SharedPreferences get(Context c) {
         return c.getSharedPreferences(FILE, Context.MODE_PRIVATE);
+    }
+
+    static String number(Context c) { return get(c).getString(KEY_NUMBER, "").trim(); }
+    static String pin(Context c) { return get(c).getString(KEY_PIN, "").trim(); }
+    static String keyword(Context c) {
+        String k = get(c).getString(KEY_KEYWORD, DEFAULT_KEYWORD).trim();
+        return k.isEmpty() ? DEFAULT_KEYWORD : k;
+    }
+
+    /** Full SMS text: "<keyword> <pin> <command>". */
+    static String command(Context c, String cmd) {
+        return keyword(c) + " " + pin(c) + " " + cmd;
     }
 
     /** Keeps only digits and compares the last 9, so "+39 347..." matches "347...". */
